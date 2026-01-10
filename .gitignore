@@ -1,0 +1,26 @@
+# dependencies
+node_modules/
+**/node_modules/
+
+# builds
+dist/
+build/
+**/dist/
+**/build/
+
+# env
+.env
+.env.*
+!.env.example
+
+# logs
+*.log
+
+# OS/editor
+.DS_Store
+.vscode/
+.idea/
+
+# Cypress outputs
+**/cypress/videos/
+**/cypress/screenshots/
