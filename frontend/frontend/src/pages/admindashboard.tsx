@@ -80,6 +80,10 @@ export default function AdminDashboard() {
   const [approveId, setApproveId] = useState("");
   const [cancelId, setCancelId] = useState("");
 
+  
+  const [rejectReason, setRejectReason] = useState("");
+
+
   const [balanceUserId, setBalanceUserId] = useState("");
   const [balanceValue, setBalanceValue] = useState("");
 
@@ -204,7 +208,7 @@ export default function AdminDashboard() {
       const url = qs.toString() ? `/api/admin/all-leave-requests?${qs.toString()}` : "/api/admin/all-leave-requests";
       const res = await api<{ message: string; data: PendingLeaveRow[] }>(url, { auth: true });
       setPending(res.data);
-      setMsg("Loaded leave requests.");
+      setMsg("Loaded leave request.");
     } catch (e) {
       showError(e);
     } finally {
@@ -230,25 +234,32 @@ export default function AdminDashboard() {
   };
 
   const cancelAsAdmin = async () => {
-    resetAlerts();
-    setBusy(true);
-    try {
-      const id = Number(cancelId);
-      if (!id) throw new ApiError(400, "Enter a valid leaveRequestId");
-      await api("/api/leave-requests", {
-        method: "DELETE",
-        auth: true,
-        body: JSON.stringify({ leaveRequestId: id }),
-      });
-      setMsg(`Cancelled request ${id}.`);
-      setCancelId("");
-      await loadPending();
-    } catch (e) {
-      showError(e);
-    } finally {
-      setBusy(false);
-    }
-  };
+  resetAlerts();
+  setBusy(true);
+  try {
+    const id = Number(cancelId);
+    if (!id) throw new ApiError(400, "Enter a valid leaveRequestId");
+
+    await api("/api/leave-requests/reject", {
+      method: "PATCH",
+      auth: true,
+      body: JSON.stringify({
+        leaveRequestId: id,
+        reason: rejectReason.trim() || undefined,
+      }),
+    });
+
+    setMsg(`Rejected request ${id}.`);
+    setCancelId("");
+    setRejectReason("");
+    await loadPending();
+  } catch (e) {
+    showError(e);
+  } finally {
+    setBusy(false);
+  }
+};
+
 
   const loadCompanySummary = async () => {
     resetAlerts();
@@ -335,7 +346,7 @@ export default function AdminDashboard() {
       await api(`/api/admin/update-leave-balance/${userId}`, {
         method: "PATCH",
         auth: true,
-        body: JSON.stringify({ balance: newBalance }),
+        body: JSON.stringify({ annualLeaveBalance: newBalance }),
       });
 
       setMsg(`Updated annual leave balance for user ${userId}.`);
@@ -1013,28 +1024,36 @@ export default function AdminDashboard() {
               </div>
 
               <div className="adm-card" data-cy="adm-tool-cancel">
-                <div className="adm-cardTitle">Cancel any request by ID</div>
-                <div className="adm-cardSub">Use LeaveRequestID found in Pending requests</div>
+  <div className="adm-cardTitle">Cancel any request by ID</div>
+  <div className="adm-cardSub">Use LeaveRequestID found in Pending requests</div>
 
-                <div className="adm-formGrid">
-                  <Field
-                    label="leaveRequestId"
-                    value={cancelId}
-                    onChange={setCancelId}
-                    inputMode="numeric"
-                    dataCy="adm-cancel-id"
-                  />
-                  <button
-                    className="adm-btnDanger"
-                    disabled={busy}
-                    onClick={cancelAsAdmin}
-                    type="button"
-                    data-cy="adm-cancel-submit"
-                  >
-                    Cancel request
-                  </button>
-                </div>
-              </div>
+  <div className="adm-formGrid">
+    <Field
+      label="leaveRequestId"
+      value={cancelId}
+      onChange={setCancelId}
+      inputMode="numeric"
+      dataCy="adm-cancel-id"
+    />
+
+    <Field
+      label="Reason (optional)"
+      value={rejectReason}
+      onChange={setRejectReason}
+      dataCy="adm-cancel-reason"
+    />
+
+    <button
+      className="adm-btnDanger"
+      disabled={busy}
+      onClick={cancelAsAdmin}
+      type="button"
+      data-cy="adm-cancel-submit"
+    >
+      Cancel request
+    </button>
+  </div>
+</div>
 
               <div className="adm-card" data-cy="adm-tool-balance">
                 <div className="adm-cardTitle">Update annual leave balance</div>
