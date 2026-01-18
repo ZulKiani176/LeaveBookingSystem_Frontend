@@ -92,16 +92,17 @@ describe("Auth + role protection (smoke)", () => {
     login(MANAGER_EMAIL, MANAGER_PASSWORD);
     cy.visit(MGR_URL);
 
-    cy.intercept("GET", "/api/leave-requests/pending", {
-      statusCode: 500,
-      body: { message: "Forced error" },
-    }).as("pendingFail");
+    cy.intercept("GET", "**/api/leave-requests/pending*", {
+  statusCode: 500,
+  body: { error: "Forced error" }, // matches api.ts: data.error || data.message
+}).as("pendingFail");
 
-    cy.get('[data-cy="mgr-nav-pending"]').click();
-    cy.contains("button", /refresh/i).click({ force: true });
+cy.get('[data-cy="mgr-nav-pending"]').click();
+cy.get('[data-cy="mgr-pending-refresh"]').click();
 
-    cy.wait("@pendingFail");
-    cy.get('[data-cy="mgr-alert-error"]', { timeout: 10000 }).should("exist");
+cy.wait("@pendingFail");
+cy.get('[data-cy="mgr-alert-error"]', { timeout: 10000 }).should("exist");
+
   });
 
   it("clearing storage blocks admin access (logout equivalent)", () => {
